@@ -1,0 +1,310 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>TSP问题的动态规划解法 | Move Cloud</title>
+  <meta name="author" content="Lian Yun">
+  
+  <meta name="description" content="Welcome to my blog.">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <meta property="og:title" content="TSP问题的动态规划解法"/>
+  <meta property="og:site_name" content="Move Cloud"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Move Cloud" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  <!-- 
+ -->
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">Move Cloud</a></h1>
+  <h2><a href="/"></a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+      <li><a href="/about">About</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper"><article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2015-05-06T13:17:12.000Z"><a href="/2015/05/06/tsp-dp/">2015-05-06</a></time>
+      
+      
+  
+    <h1 class="title">TSP问题的动态规划解法</h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <p>问题来自与Coursera上的公开课Algorithms: Design and Analysis, Part 2</p>
+<p>是实现一个基于动态规划的精确TSP算法。这个算法在《算法概论》也给出过。但是在编程中发现其复杂程度远非他看到的那么简单。<br><a id="more"></a></p>
+<h3 id="问题提出">问题提出</h3><p>给出25个点，以(x, y)点对的方式给出。他们具有下面的形式：<br><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">25</span><br><span class="line">20833.3333 17100.0000</span><br><span class="line">20900.0000 17066.6667</span><br><span class="line">21300.0000 13016.6667</span><br><span class="line">21600.0000 14150.0000</span><br><span class="line">21600.0000 14966.6667</span><br><span class="line">21600.0000 16500.0000</span><br><span class="line">22183.3333 13133.3333</span><br><span class="line">22583.3333 14300.0000</span><br><span class="line">22683.3333 12716.6667</span><br><span class="line">23616.6667 15866.6667</span><br><span class="line">23700.0000 15933.3333</span><br><span class="line">23883.3333 14533.3333</span><br><span class="line">24166.6667 13250.0000</span><br><span class="line">25149.1667 12365.8333</span><br><span class="line">26133.3333 14500.0000</span><br><span class="line">26150.0000 10550.0000</span><br><span class="line">26283.3333 12766.6667</span><br><span class="line">26433.3333 13433.3333</span><br><span class="line">26550.0000 13850.0000</span><br><span class="line">26733.3333 11683.3333</span><br><span class="line">27026.1111 13051.9444</span><br><span class="line">27096.1111 13415.8333</span><br><span class="line">27153.6111 13203.3333</span><br><span class="line">27166.6667 9833.3333</span><br><span class="line">27233.3333 10450.0000</span><br></pre></td></tr></table></figure></p>
+<p>每行都是一个点在平面坐标系中的坐标。可以在图中画出，具有下面的形式：<br><img src="https://raw.githubusercontent.com/LianYun/code_fragment/master/python/tsp/position.jpg" alt="坐标系中点的分布"></p>
+<h3 id="问题分析">问题分析</h3><p>首先，由于这是一个在平面上分布的TSP问题，因而可以采用求取图MST的方法得到一个上界。<br>参见算法概论9.2.3节。<br>使用Prim算法，可以直接求得MST，那么有 <code>TSP &lt;= 2*MST</code>。</p>
+<p>基本的动态规划算法，其伪代码描述如下：<br>n个城市表示为集合{1, 2, 3 … n}<br>S是一个所有城市集合的子集， S一定包含1城市。<br>C(S, j)为从1出发，经过S中所有的点最终到达j城市的最短路径长度。因而可以得到下面的动态<br>规划递归公式:</p>
+<blockquote>
+<p>C(S, j) = min(i in S &amp;&amp; i != j){ C(S-{j}, i) + d_ij}</p>
+</blockquote>
+<p>那么伪代码描述如下:<br>init: C({i}, 1) = 0<br><figure class="highlight r"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> s = <span class="number">2</span> to n:</span><br><span class="line">    <span class="keyword">for</span> all subsets S of &#123;<span class="number">1</span>, <span class="number">2</span>, <span class="keyword">...</span> n&#125; of size s and containing <span class="number">1</span>:</span><br><span class="line">        C(S, <span class="number">1</span>) = positive infinite</span><br><span class="line">        <span class="keyword">for</span> all j <span class="keyword">in</span> S, j != <span class="number">1</span>:</span><br><span class="line">            C(S, j) = min&#123;C(S-&#123;j&#125;, i) + d_ij, i <span class="keyword">in</span> S and i != j&#125;</span><br><span class="line">    <span class="keyword">return</span> min_j C(&#123;<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="keyword">...</span> n&#125;, j) + d_ij</span><br></pre></td></tr></table></figure></p>
+<p>这个伪代码看起来很简单，但是在实现中就会遇到下面的问题:</p>
+<ul>
+<li>如何表示集合S，节省空间，且能够快速查找？</li>
+<li>如何找到与S具有相同的元素个数的下一个子集S’?</li>
+<li>使用前面提到的下限来进行分支定界搜索？</li>
+</ul>
+<p>好吧，下面就这几个问题做简要的介绍。</p>
+<h3 id="城市表示">城市表示</h3><p>如果集合S含有城市1， 3， 5，那么可以用一个整数来对集合S表示如下:</p>
+<p>0b00010101</p>
+<p>数字1表示城市在集合中，0表示对应位上的城市不在集合中。</p>
+<h3 id="相同尺寸集合的迭代">相同尺寸集合的迭代</h3><p>有一个非常有趣的算法，可以得到含有m个1的下一集合。其代码如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">gosper_hack</span><span class="params">(x)</span>:</span></span><br><span class="line">    <span class="string">"""</span><br><span class="line">    参见:</span><br><span class="line">        (http://read.seas.harvard.edu/cs207/2012/?p=64)</span><br><span class="line">        0111 =&gt; 1011</span><br><span class="line">        0101 =&gt; 0110</span><br><span class="line">        ...</span><br><span class="line">    """</span></span><br><span class="line">    c = (x &amp; -x)</span><br><span class="line">    r = x + c</span><br><span class="line">    <span class="keyword">return</span> (((r ^ x) &gt;&gt; <span class="number">2</span>) / c) | r</span><br></pre></td></tr></table></figure></p>
+<p>可以测试如下:<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt;gosper_hack(int(<span class="string">"00111"</span>, <span class="number">2</span>))</span><br><span class="line"><span class="number">01011</span></span><br><span class="line">&gt;&gt;&gt;gosper_hack(int(<span class="string">"01001"</span>, <span class="number">2</span>))</span><br><span class="line"><span class="number">010010</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="集合少一个元素子集的获取">集合少一个元素子集的获取</h3><p>在算法的第二步中<br><figure class="highlight matlab"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> all <span class="built_in">j</span> in S, <span class="built_in">j</span> != <span class="number">1</span>:</span><br><span class="line">    C(S, <span class="built_in">j</span>) = min<span class="cell">&#123;C(S-&#123;j&#125;</span>, <span class="built_in">i</span>) + d_ij, <span class="built_in">i</span> in S and <span class="built_in">i</span> != <span class="built_in">j</span>&#125;</span><br></pre></td></tr></table></figure></p>
+<p>因而我们需要知道S少一个元素后的所有子集，可以使用位运算实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">neightbor</span><span class="params">(count, N)</span>:</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> xrange(N):</span><br><span class="line">        c = <span class="number">1</span> &lt;&lt; i</span><br><span class="line">        <span class="keyword">if</span> (c &amp; count):</span><br><span class="line">            <span class="keyword">yield</span> (i, (c ^ count))</span><br></pre></td></tr></table></figure></p>
+<p>这里使用了yield生成这个遍历集合。</p>
+<h3 id="动态规划中间数据的记录">动态规划中间数据的记录</h3><p>采用List，根据编号进行索引。</p>
+<h3 id="最终python实现结果">最终python实现结果</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -*-coding: utf-8 -*-</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 算法流程</span></span><br><span class="line"><span class="comment"># 1 读入几何图</span></span><br><span class="line"><span class="comment"># 2 构建可计算图像</span></span><br><span class="line"><span class="comment"># 3 由最小生成树估计2倍下界</span></span><br><span class="line"><span class="comment"># 4 由分支定界法计算</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 节点存储，int bit法，即用bitset of int 存储集合情况</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">MAX_LENGTH = <span class="number">500000.0</span>        <span class="comment"># mst的两倍为41570.2，因而将最大值设为左值</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">tsp_dp</span><span class="params">(up_bound, dist_dict)</span>:</span></span><br><span class="line">    <span class="string">"""</span><br><span class="line">    计算tsp的方法:</span><br><span class="line">    集合的位表示：</span><br><span class="line">    含有1个元素的集合:</span><br><span class="line">    &#123;00001, 00010, 00100, 01000, 10000&#125;</span><br><span class="line">    含有三个元素的集合:</span><br><span class="line">    &#123;00111， 01011， 01101， 01110， 10011， 10101， 10110， 11001， 11010，</span><br><span class="line">    11100&#125;</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    使用字典来记录集合的结尾和对应tsp的长度</span><br><span class="line"></span><br><span class="line">    运行中发现内存占用很大，达到8GB，使用代码中标注的方法进行释放空间，但是并不理想。</span><br><span class="line"></span><br><span class="line">    可能与python的垃圾回收策略有关系。</span><br><span class="line"></span><br><span class="line">    采用2×MST的上限进行剪枝，这个上限作为up_bound参数传入.</span><br><span class="line">    """</span></span><br><span class="line">    N = len(dist_dict)-<span class="number">1</span></span><br><span class="line">    MAX_INDEX = <span class="number">1</span> &lt;&lt; N</span><br><span class="line">    records = [ &#123;&#125; <span class="keyword">for</span> i <span class="keyword">in</span> xrange(<span class="number">1</span> &lt;&lt; N) ]    <span class="comment"># 2**N == 1 &lt;&lt; N</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    s = <span class="string">"1"</span></span><br><span class="line">    count = int(s, <span class="number">2</span>)</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> xrange(N):</span><br><span class="line">        <span class="keyword">if</span> count &gt;= MAX_INDEX:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        records[count][i+<span class="number">1</span>] = dist_dict[<span class="number">0</span>][i+<span class="number">1</span>]</span><br><span class="line">        <span class="comment"># 对count代表的集合，从0出发，到达i+1点的单回路的距离</span></span><br><span class="line">        count=gosper_hack(count)        <span class="comment"># 具有相同结点数的下一个集合</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> m <span class="keyword">in</span> range(<span class="number">1</span>, N):</span><br><span class="line">        s = s + <span class="string">"1"</span></span><br><span class="line">        count = int(s, <span class="number">2</span>)</span><br><span class="line">        <span class="keyword">while</span> (count &lt; MAX_INDEX):</span><br><span class="line">            <span class="keyword">for</span> (j, nb) <span class="keyword">in</span> neightbor(count, N):</span><br><span class="line">                <span class="keyword">for</span> (ss, dnb) <span class="keyword">in</span> neightbor(nb, N):</span><br><span class="line">                    records[dnb] = []   <span class="comment"># 释放空间，虽然增大了一倍的运算时间</span></span><br><span class="line"></span><br><span class="line">                <span class="keyword">for</span> (end, length) <span class="keyword">in</span> records[nb].iteritems():</span><br><span class="line">                    <span class="keyword">if</span> j+<span class="number">1</span> != end:</span><br><span class="line">                        new_len = min(records[count].get(j+<span class="number">1</span>,</span><br><span class="line">                                MAX_LENGTH), length + dist_dict[j+<span class="number">1</span>][end])</span><br><span class="line">                        <span class="keyword">if</span> new_len &lt; up_bound:      <span class="comment"># 根据上限进行剪枝</span></span><br><span class="line">                            records[count][j+<span class="number">1</span>] = new_len</span><br><span class="line"></span><br><span class="line">            count = gosper_hack(count)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    all_len = MAX_LENGTH</span><br><span class="line">    <span class="keyword">for</span> (end, length) <span class="keyword">in</span> records[int(s, <span class="number">2</span>)].iteritems():</span><br><span class="line">        all_len = min(all_len, length + dist_dict[end][<span class="number">0</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> all_len</span><br></pre></td></tr></table></figure>
+<h3 id="测试代码">测试代码</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test</span><span class="params">()</span>:</span></span><br><span class="line">    test1 = <span class="string">"ttsp1.txt"</span></span><br><span class="line">    test2 = <span class="string">"ttsp2.txt"</span></span><br><span class="line">    test3 = <span class="string">"ttsp3.txt"</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">tsp_cal</span><span class="params">(path)</span>:</span></span><br><span class="line">        (w, dd) = up_limit_dict(build_graph(read_position(path)))</span><br><span class="line">        r = tsp_dp(w, dd)</span><br><span class="line">        <span class="keyword">print</span> <span class="string">"result:"</span>, r</span><br><span class="line"></span><br><span class="line">    tsp_cal(test1)</span><br><span class="line">    tsp_cal(test2)</span><br><span class="line">    tsp_cal(test3)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">tsp_prob</span><span class="params">()</span>:</span></span><br><span class="line">    path = <span class="string">"tsp.txt"</span></span><br><span class="line">    pos_list = read_position(path)</span><br><span class="line">    (w, dd) = up_limit_dict(build_graph(pos_list))</span><br><span class="line">    <span class="keyword">print</span> tsp_dp(w, dd)</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> timeit</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    <span class="comment">#test()</span></span><br><span class="line">    t = timeit.timeit(<span class="string">"tsp_prob()"</span>, setup=<span class="string">"from __main__ import tsp_prob"</span>, number = <span class="number">1</span>)</span><br><span class="line">    <span class="keyword">print</span> <span class="string">"time:"</span>, t</span><br></pre></td></tr></table></figure>
+<p>上面代码对运算进行计时，</p>
+<ul>
+<li>最终结果: 26442.730309, 所用的时间: 1845.92434001seconds～31分钟</li>
+<li>内存占用分析: 2<strong>24<em>(8 + 16+24 </em> 8)=2</strong>30 * 27/8 = 3.6GB</li>
+<li>但实际上内存占用甚至大于这个，不知道为什么.</li>
+</ul>
+<p>本文的代码参见<a href="https://github.com/LianYun/code_fragment/tree/master/python/tsp" target="_blank" rel="external">code_fragment</a></p>
+<p>论坛中有人给出了内存占用600M左右，计算时间10分钟的结果，木钱我还不知道如何进一步进行优化。</p>
+
+      
+    </div>
+
+    <footer>
+      
+        <div class="bdsharebuttonbox"><a href="#" class="bds_more" data-cmd="more"></a><a href="#" class="bds_qzone" data-cmd="qzone" title="分享到QQ空间"></a><a href="#" class="bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a><a href="#" class="bds_tqq" data-cmd="tqq" title="分享到腾讯微博"></a><a href="#" class="bds_renren" data-cmd="renren" title="分享到人人网"></a><a href="#" class="bds_weixin" data-cmd="weixin" title="分享到微信"></a></div>
+<script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdPic":"","bdStyle":"0","bdSize":"16"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];</script>
+
+<!--
+
+  <div class="addthis addthis_toolbox addthis_default_style">
+    
+    
+    
+    
+      <a class="addthis_button_pinterest_pinit" pi:pinit:layout="horizontal"></a>
+    
+    <a class="addthis_counter addthis_pill_style"></a>
+  </div>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js"></script>
+
+
+-->
+
+        
+  
+  <div class="categories">
+    <a href="/categories/problem/">problem</a>
+  </div>
+
+        
+  
+  <div class="tags">
+    <a href="/tags/algorithm/">algorithm</a>
+  </div>
+
+
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+<nav id="pagination" >
+    
+    
+    <a href="/2015/05/02/password/" class="alignright next" >下一页</a>
+    
+    <div class="clearfix"></div>
+</nav>
+
+<section id="comment">
+  <h1 class="title">留言</h1>
+
+  
+    <section id="comments">
+    <!-- 多说评论框 start -->
+    <div class="ds-thread" data-thread-key="post-tsp-dp" data-title="TSP问题的动态规划解法" data-url="http://movecloud.me/2015/05/06/tsp-dp/"></div>
+    <!-- 多说评论框 end -->
+    <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name:'lianyun'};
+      (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0]
+         || document.getElementsByTagName('body')[0]).appendChild(ds);
+      })();
+      </script>
+    <!-- 多说公共JS代码 end -->
+    </section>
+  
+</section>
+
+
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//baidu.com/baidu" method="get" accept-charset="utf-8">
+    <input type="search" name="word" results="0" placeholder="搜索">
+    <input type="hidden" name="si" value="movecloud.me">
+    <input name=tn type=hidden value="bds">
+    <input name=cl type=hidden value="3">
+    <input name=ct type=hidden value="2097152">
+    <input name=s type=hidden value="on">
+  </form>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">分类</h3>
+  <ul class="entry">
+  
+    <li><a href="/categories/algorithm/">algorithm</a><small>0</small></li>
+  
+    <li><a href="/categories/language/">language</a><small>1</small></li>
+  
+    <li><a href="/categories/mooc/">mooc</a><small>1</small></li>
+  
+    <li><a href="/categories/problem/">problem</a><small>2</small></li>
+  
+    <li><a href="/categories/test/">test</a><small>1</small></li>
+  
+    <li><a href="/categories/web/">web</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget tagcloud">
+  <h3 class="title">标签云</h3>
+  <div class="entry">
+    <a href="/tags/algorithm/" style="font-size: 20px;">algorithm</a><a href="/tags/learning/" style="font-size: 10px;">learning</a><a href="/tags/mooc/" style="font-size: 10px;">mooc</a><a href="/tags/scala/" style="font-size: 15px;">scala</a><a href="/tags/test/" style="font-size: 10px;">test</a>
+  </div>
+</div>
+
+
+  <div class="widget visitor">
+  <h3 class="title">最近的访客</h3>
+  <div class="entry">
+    <ul class="ds-recent-visitors"></ul>
+    <!--多说js加载开始，一个页面只需要加载一次 -->
+    <script type="text/javascript">
+    var duoshuoQuery = {short_name: config.duoshuo_shortname};
+    (function() {
+        var ds = document.createElement('script');
+        ds.type = 'text/javascript';ds.async = true;
+        ds.src = 'http://static.duoshuo.com/embed.js';
+        ds.charset = 'UTF-8';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+    </script>
+    <!--多说js加载结束，一个页面只需要加载一次 -->
+  </div>
+</div>
+
+
+  
+<div class="widget tag">
+  <h3 class="title">最新文章</h3>
+  <ul class="entry">
+    
+      <li>
+        <a href="/2015/05/06/tsp-dp/">TSP问题的动态规划解法</a>
+      </li>
+    
+      <li>
+        <a href="/2015/05/02/password/">web开发过程中Cookies和密码的hash处理方法</a>
+      </li>
+    
+      <li>
+        <a href="/2015/01/10/sierpinski/">Sierpinski 三角形</a>
+      </li>
+    
+      <li>
+        <a href="/2015/01/06/way-of-learn-scala/">学习scala的道路</a>
+      </li>
+    
+      <li>
+        <a href="/2015/01/02/mooc-records/">MOOC学习记录</a>
+      </li>
+    
+  </ul>
+</div>
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2015 Lian Yun
+  
+</div>
+<div class="clearfix"></div></footer>
+  <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+-->
+<script type='text/javascript' src='http://ajax.useso.com/ajax/libs/jquery/1.7.2/jquery.min.js?ver=3.4.2'></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+<!-- 百度统计 -->
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?7555be8f75702feef9106c89fb880bcb";
+  var s = document.getElementsByTagName("script")[0];
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+</body>
+</html>
