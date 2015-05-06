@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>web开发过程中Cookie和密码的hash处理方法 | Move Cloud</title>
+  <title>web开发过程中Cookies和密码的hash处理方法 | Move Cloud</title>
   <meta name="author" content="Lian Yun">
   
   <meta name="description" content="Welcome to my blog.">
@@ -11,7 +11,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <meta property="og:title" content="web开发过程中Cookie和密码的hash处理方法"/>
+  <meta property="og:title" content="web开发过程中Cookies和密码的hash处理方法"/>
   <meta property="og:site_name" content="Move Cloud"/>
 
   
@@ -56,13 +56,63 @@
       
       
   
-    <h1 class="title">web开发过程中Cookie和密码的hash处理方法</h1>
+    <h1 class="title">web开发过程中Cookies和密码的hash处理方法</h1>
   
 
     </header>
     <div class="entry">
       
-        
+        <p>cookies 和 密码都是web开发中授权的问题。两者都涉及到hash的使用问题。<br>本文主要讨论的内容是设定cookies，用于登录和注册系统，以安全的方式处理密码<br>的存储问题，避免各种可能的信息泄露。<br><a id="more"></a></p>
+<h2 id="Cookies">Cookies</h2><p>Cookies的基本形式是简单的键值对：<br>name = value<br>为什么需要Cookies的问题想必大家都非常清除了。<br>通常来说，一个网站可以设定大约20个cookies，这也取决于浏览器的设置。<br>Cookie必须小于 4 kilobytes，一般我们的cookie都远远小于这个值。一些<br>浏览器和服务器无法处理多行的cookie，因而应当尽量避免。</p>
+<p>Cookie必须和特定的域名相对应。</p>
+<h3 id="Cookie的使用">Cookie的使用</h3><ul>
+<li>存储登录信息</li>
+<li>存储一些小的数据，避免数据库查询</li>
+<li>存储用户的偏好信息</li>
+<li>跟踪用于广告推荐</li>
+</ul>
+<h3 id="Cookie报文头">Cookie报文头</h3><p>Server =&gt; Client:</p>
+<p><strong>Set-Cookie: user_id=12345</strong><br><strong>Set-Cookie: last_seen=Dec 25 1985</strong></p>
+<p>Client browser =&gt; Server:</p>
+<p>**Cookie: user_id=12345; last_seen = Dec 25 1985</p>
+<h4 id="举例：">举例：</h4><blockquote>
+<p>Google cookie:<br>Set-Cookie: PREF=ID=9dc1d7062ae5fd16:FF=0:TM=1336504404:LM=1336504404:S=KVV_FUsYL5CImBd4; expires=Thu, 08-May-2014 19:13:24 GMT; path=/; domain=.google.com</p>
+</blockquote>
+<ul>
+<li>过期时间： expires（没有设定会在关闭浏览器时删除Cookie）</li>
+<li>Cookie限制： path（/） 域名（google.com)</li>
+</ul>
+<p>域名限制：<br>www.reddit.com可以给www.reddit.com和foo.www.reddit.com设定cookies，<br>但不能够给bar.reddit.com或者reddit.com设定Cookies。</p>
+<h3 id="Cookie的代码设定">Cookie的代码设定</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">request.cookies.get(<span class="string">"name"</span>, default_value)</span><br><span class="line">response.header.add_header(<span class="string">"Set-Cookie"</span>, <span class="string">"&#123;name&#125;=&#123;value&#125;"</span>.fomat())</span><br></pre></td></tr></table></figure>
+<h2 id="Hashing">Hashing</h2><p>H(x)=y 从数据到定长bit字符串的映射<br>相关内容可以参考密码学的相关内容。</p>
+<h3 id="常见的Hash算法：">常见的Hash算法：</h3><p>CRC32：  一般用于Checksum<br>MD5：    相对较快，但是并不安全，仍然是最常用的hashing算法<br>SHA-1：  比MD5慢，相对安全，第二流行的算法。<br>SHA256： 特别安全，但是运算速度慢。</p>
+<h3 id="python中hash的实现">python中hash的实现</h3><p>hashlib：</p>
+<ul>
+<li>md5()</li>
+<li>sha1()</li>
+<li>sha224()</li>
+<li>sha256()</li>
+<li>sha384()</li>
+<li>sha512()<br>使用举例：<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> hashlib</span><br><span class="line">x = hashlib.md5(<span class="string">"hello!"</span>)</span><br><span class="line">x.hexdigest()</span><br><span class="line"></span><br><span class="line"><span class="comment">### 用hash处理Cookies</span></span><br><span class="line">使得Cookies更加难于伪造！</span><br><span class="line">建立hash的cookies</span><br><span class="line">```python</span><br><span class="line"><span class="keyword">import</span> hashlib</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">hash_str</span><span class="params">(s)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> hashlib.md5(s).hexdigest()</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">make_secure_val</span><span class="params">(s)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> <span class="string">"%s|%s"</span> % (s, hash_str(s))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">check_secure_val</span><span class="params">(h)</span>:</span></span><br><span class="line">        val = h.split(<span class="string">'|'</span>)[<span class="number">0</span>]</span><br><span class="line">        <span class="keyword">if</span> h == make_secure_val(val):</span><br><span class="line">                <span class="keyword">return</span> val</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>使用：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">visits = <span class="number">0</span></span><br><span class="line">visit_cookie_str = self.request.cookies.get(<span class="string">'visits'</span>)</span><br><span class="line"><span class="keyword">if</span> visit_cookie_str:</span><br><span class="line">    cookie_val = check_secure_val(visit_cookie_str)</span><br><span class="line">    <span class="keyword">if</span> cookie_val:</span><br><span class="line">        visits = int(cookie_val)</span><br><span class="line"></span><br><span class="line">new_cookie_val = make_secure_val(str(visits))</span><br><span class="line">self.response.headers.add_header(<span class="string">'Set-Cookie'</span>, <span class="string">'visits=%s'</span> % new_cookie_val)</span><br></pre></td></tr></table></figure></p>
+<p>最终一个Cookie具有下面的形式：<br>visit = 1|HASH</p>
+<h3 id="Hash-based_Message_Authentication_Code_(HMAC)">Hash-based Message Authentication Code (HMAC)</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> hmac</span><br><span class="line">hmac.new(<span class="string">"secret"</span>, <span class="string">"udacity"</span>).hexdigest()</span><br></pre></td></tr></table></figure>
+<p>增加密码关键字以进一步确保Cookie的正确性：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">SECRET = <span class="string">'imsosecret'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> hmac</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">hash_str</span><span class="params">(s)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> hmac.new(SECRET, s).hexdigest()</span><br></pre></td></tr></table></figure></p>
+<h3 id="密码散列">密码散列</h3><p>为了避免用户数据泄露，我们不能够将密码明文存储在数据库中，而是将其散列后再存储。</p>
+<p>但是简单的散列并不足够？因为存在Rainbow Tasbles。这个表将所有的字符<br>和他们散列对应起来。可以查询这个表并由此破解密码。</p>
+<p>解决方案，增加salt。<br>salt是一个随机的字符串，在每次将password哈希前增加到密码上。</p>
+<p>h=H(pw + salt)</p>
+<h4 id="制造salt">制造salt</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">make_salt</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">''</span>.join(random.choice(string.letters) <span class="keyword">for</span> x <span class="keyword">in</span> xrange(<span class="number">5</span>))</span><br></pre></td></tr></table></figure>
+<p>实现如下的hash密码<br>HASH(name + pw + salt),salt</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">make_pw_hash</span><span class="params">(name, pw, salt=None)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> salt:</span><br><span class="line">        salt=make_salt()</span><br><span class="line">    h = hashlib.sha256(name + pw + salt).hexdigest()</span><br><span class="line">    <span class="keyword">return</span> <span class="string">'%s,%s'</span> % (h, salt)</span><br></pre></td></tr></table></figure>
+<p>hash salt密码的验证和使用：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">valid_pw</span><span class="params">(name, pw, h)</span>:</span></span><br><span class="line">    salt = h.split(<span class="string">','</span>)[<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">return</span> h == make_pw_hash(name, pw, salt)</span><br><span class="line"></span><br><span class="line">h = make_pw_hash(<span class="string">'spez'</span>, <span class="string">'hunter2'</span>)</span><br><span class="line"><span class="keyword">print</span> valid_pw(<span class="string">'spez'</span>, <span class="string">'hunter2'</span>, h)</span><br></pre></td></tr></table></figure></p>
+<h3 id="相关内容">相关内容</h3><p>Bcrypt<br>HTTPs</p>
+<h2 id="Flask中的Hash_Passwords的实现">Flask中的Hash Passwords的实现</h2><p>Flask基于werkzeug，Werkzeug本身就提供了了相关的函数，有如下的签名：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">generate_password_hash(password, method=pbkdf2:sha1, salt_length=<span class="number">8</span>):</span><br><span class="line"></span><br><span class="line">check_password_hash(hash, password):</span><br></pre></td></tr></table></figure></p>
+<p>这两个函数和前面提到的使用hashilib实现的函数有着几乎相同的功能。</p>
+<p>本文的主要参考资料有：<br><a href="https://www.udacity.com/wiki/cs253/unit-4" target="_blank" rel="external">Udacity cs253</a><br><a href="#">Flask Web Development</a></p>
+
       
     </div>
 
@@ -88,10 +138,15 @@
 -->
 
         
+  
+  <div class="categories">
+    <a href="/categories/web/">web</a>
+  </div>
+
         
   
   <div class="tags">
-    <a href="/tags/web-a/">web a</a>
+    <a href="/tags/algorithm/">algorithm</a>
   </div>
 
 
@@ -116,7 +171,7 @@
   
     <section id="comments">
     <!-- 多说评论框 start -->
-    <div class="ds-thread" data-thread-key="post-password" data-title="web开发过程中Cookie和密码的hash处理方法" data-url="http://movecloud.me/2015/05/02/password/"></div>
+    <div class="ds-thread" data-thread-key="post-password" data-title="web开发过程中Cookies和密码的hash处理方法" data-url="http://movecloud.me/2015/05/02/password/"></div>
     <!-- 多说评论框 end -->
     <!-- 多说公共JS代码 start (一个网页只需插入一次) -->
     <script type="text/javascript">
@@ -155,13 +210,15 @@
   <h3 class="title">分类</h3>
   <ul class="entry">
   
-    <li><a href="/categories/Problem/">Problem</a><small>1</small></li>
-  
     <li><a href="/categories/language/">language</a><small>1</small></li>
   
     <li><a href="/categories/mooc/">mooc</a><small>1</small></li>
   
+    <li><a href="/categories/problem/">problem</a><small>1</small></li>
+  
     <li><a href="/categories/test/">test</a><small>1</small></li>
+  
+    <li><a href="/categories/web/">web</a><small>1</small></li>
   
   </ul>
 </div>
@@ -171,7 +228,7 @@
 <div class="widget tagcloud">
   <h3 class="title">标签云</h3>
   <div class="entry">
-    <a href="/tags/FunctionProgramming/" style="font-size: NaNpx;">FunctionProgramming</a><a href="/tags/Scala/" style="font-size: NaNpx;">Scala</a><a href="/tags/mooc/" style="font-size: NaNpx;">mooc</a><a href="/tags/scala/" style="font-size: NaNpx;">scala</a><a href="/tags/test/" style="font-size: NaNpx;">test</a><a href="/tags/web-a/" style="font-size: NaNpx;">web a</a>
+    <a href="/tags/algorithm/" style="font-size: 20px;">algorithm</a><a href="/tags/learning/" style="font-size: 10px;">learning</a><a href="/tags/mooc/" style="font-size: 10px;">mooc</a><a href="/tags/scala/" style="font-size: 20px;">scala</a><a href="/tags/test/" style="font-size: 10px;">test</a>
   </div>
 </div>
 
@@ -202,7 +259,7 @@
   <ul class="entry">
     
       <li>
-        <a href="/2015/05/02/password/">web开发过程中Cookie和密码的hash处理方法</a>
+        <a href="/2015/05/02/password/">web开发过程中Cookies和密码的hash处理方法</a>
       </li>
     
       <li>
